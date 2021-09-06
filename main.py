@@ -416,12 +416,6 @@ while running:
                         anim_interval = ANIM_FRAME_DURATION
                         is_anim_being_played = True
                         anim_ind = 0
-                        # lives -= 1
-                        # if lives == 0:
-                        #     has_player_lost = True
-                        # else:
-                        #     pacman.reset_pos()
-                        #     # Play animation or idk
                 if not(is_anim_being_played):
                     ghost.move(maze)
                 screen.blit(ghost.get_sprite(), ghost.get_pos())
@@ -464,6 +458,8 @@ while running:
                 if event.key == pygame.K_SPACE:
                     reset = True
                     if has_player_lost:
+                        maze.set_level(levels[0])
+                        level_idx = 0
                         lives = 3
                         score = 0
                     if are_all_coins_collected and len(levels) <= level_idx:
