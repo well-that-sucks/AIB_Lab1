@@ -9,9 +9,10 @@ BLOCK_AMOUNT_Y = SCREEN_HEIGHT / SPRITE_SIZE
 SPRITE_CHANGE_INTERVAL = 5
 BOT_CHANGE_DIRECTION_INTERVAL = 30
 KILLER_MODE_DURATION = 600
+ANIM_FRAME_DURATION = 10
 RESPAWN_TIME = 300
 ALLOWANCE_THRESHOLD = 0.3
-EATEN_ENEMY_VALUE = 200
+EATEN_ENEMY_REWARD = 200
 COIN_VALUE = 10
 MIN_COLLISION_DISTANCE = 25
 FPS = 60
@@ -281,6 +282,19 @@ ghost_sprites = [get_image(pacman_spritesheet, 1, 83, 16, 16, 3),
     get_image(pacman_spritesheet, 601, 641, 16, 16, 3),
     get_image(pacman_spritesheet, 401, 83, 16, 16, 3)]
 
+pacman_death_anim = [get_image(pacman_spritesheet, 201, 692, 16, 16, 3),
+    get_image(pacman_spritesheet, 218, 692, 16, 16, 3),
+    get_image(pacman_spritesheet, 235, 692, 16, 16, 3),
+    get_image(pacman_spritesheet, 252, 692, 16, 16, 3),
+    get_image(pacman_spritesheet, 269, 692, 16, 16, 3),
+    get_image(pacman_spritesheet, 286, 692, 16, 16, 3),
+    get_image(pacman_spritesheet, 201, 709, 16, 16, 3),
+    get_image(pacman_spritesheet, 218, 709, 16, 16, 3),
+    get_image(pacman_spritesheet, 235, 709, 16, 16, 3),
+    get_image(pacman_spritesheet, 252, 709, 16, 16, 3),
+    get_image(pacman_spritesheet, 269, 709, 16, 16, 3),
+    get_image(pacman_spritesheet, 286, 709, 16, 16, 3)]
+
 ghost_killer_mode_sprite = get_image(pacman_spritesheet, 201, 168, 16, 16, 3)
 wall_sprite = get_image(pacman_spritesheet, 801, 604, 48, 48, 1)
 coin_sprite = get_image(pacman_spritesheet, 536, 586, 8, 8, 2)
@@ -305,8 +319,11 @@ while running:
         sprite_interval = SPRITE_CHANGE_INTERVAL
         bot_interval = BOT_CHANGE_DIRECTION_INTERVAL
         killer_timer = KILLER_MODE_DURATION
+        anim_ind = 0
+        anim_interval = ANIM_FRAME_DURATION
         rand_helper = [-1, 1]
         is_killer_mode_active = False
+        is_anim_being_played = False
         has_player_lost = False
         are_all_coins_collected = False
         reset = False
@@ -325,9 +342,6 @@ while running:
                     pacman.set_velocity(0, -3)
                 if event.key == pygame.K_DOWN:
                     pacman.set_velocity(0, 3)
-
-        pacman.move(maze)
-
         if is_killer_mode_active:
             killer_timer -= 1
             if killer_timer == 0:
@@ -352,7 +366,7 @@ while running:
         are_all_coins_collected = True
         for coin in coins:
             if (coin.get_visibility_state()):
-                if check_entity_collision(pacman, coin):
+                if check_entity_collision(pacman, coin) and not(is_anim_being_played):
                     score += coin.get_value()
                     coin.change_visibility_state()
                 else:
@@ -366,7 +380,7 @@ while running:
 
         for booster in boosters:
             if (booster.get_visibility_state()):
-                if check_entity_collision(pacman, booster):
+                if check_entity_collision(pacman, booster) and not(is_anim_being_played):
                     is_killer_mode_active = True
                     killer_timer = KILLER_MODE_DURATION
                     for ghost in ghosts:
@@ -374,6 +388,9 @@ while running:
                     booster.change_visibility_state()
                 else:
                     screen.blit(booster.get_sprite(), booster.get_pos())
+
+        if not(is_anim_being_played):
+            pacman.move(maze)
 
         bot_interval -= 1
         for ghost in ghosts:
@@ -390,24 +407,45 @@ while running:
                     else:
                         new_velocity_y = 0
                     ghost.set_velocity(new_velocity_x, new_velocity_y)
-                if check_entity_collision(pacman, ghost):
+                if check_entity_collision(pacman, ghost) and not(is_anim_being_played):
                     if is_killer_mode_active:
                        ghost.set_invisibility_timer(RESPAWN_TIME)
                        ghost.change_visibility_state()
-                       score += EATEN_ENEMY_VALUE
+                       score += EATEN_ENEMY_REWARD
                     else: 
-                        lives -= 1
-                        if lives == 0:
-                            has_player_lost = True
-                        else:
-                            pacman.reset_pos()
-                            # Play animation or idk 
-                ghost.move(maze)
+                        anim_interval = ANIM_FRAME_DURATION
+                        is_anim_being_played = True
+                        anim_ind = 0
+                        # lives -= 1
+                        # if lives == 0:
+                        #     has_player_lost = True
+                        # else:
+                        #     pacman.reset_pos()
+                        #     # Play animation or idk
+                if not(is_anim_being_played):
+                    ghost.move(maze)
                 screen.blit(ghost.get_sprite(), ghost.get_pos())
         if (bot_interval == 0):
             bot_interval = BOT_CHANGE_DIRECTION_INTERVAL
 
-        screen.blit(pacman.get_directed_sprite(), pacman.get_pos())
+        if not(is_anim_being_played):
+            screen.blit(pacman.get_directed_sprite(), pacman.get_pos())
+
+        if (is_anim_being_played):
+            anim_interval -= 1
+            if anim_interval == 0:
+                if anim_ind >= len(pacman_death_anim):
+                    is_anim_being_played = False
+                    lives -= 1
+                    if lives == 0:
+                        has_player_lost = True
+                    else:
+                        pacman.reset_pos()
+                else:
+                    anim_ind += 1
+                    anim_interval = ANIM_FRAME_DURATION
+            if anim_ind < len(pacman_death_anim):
+                screen.blit(pacman_death_anim[anim_ind], pacman.get_pos())
         maze.draw_level()
 
         score_ins = hud_font.render('Score: ' + str(score), True, (255, 255, 255))
