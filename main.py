@@ -7,7 +7,7 @@ SPRITE_SIZE = 48
 BLOCK_AMOUNT_X = SCREEN_WIDTH / SPRITE_SIZE
 BLOCK_AMOUNT_Y = SCREEN_HEIGHT / SPRITE_SIZE
 SPRITE_CHANGE_INTERVAL = 5
-BOT_CHANGE_DIRECTION_INTERVAL = 20
+BOT_CHANGE_DIRECTION_INTERVAL = 30
 KILLER_MODE_DURATION = 600
 RESPAWN_TIME = 300
 ALLOWANCE_THRESHOLD = 0.3
@@ -42,7 +42,6 @@ class StaticEntity:
     
     def set_sprite(self, sprite):
         self.sprite = sprite
-        self.update_directed_sprite()
 
 class MovingEntity(StaticEntity):
     def __init__(self, sprite, x, y):
@@ -126,9 +125,13 @@ class Pacman(MovingEntity):
             else:
                 self.directed_sprite = pygame.transform.rotate(self.sprite, 90)
         self.directed_sprite.set_colorkey((0, 0, 0)) 
-    
+
     def get_directed_sprite(self):
         return self.directed_sprite
+
+    def set_sprite(self, sprite):
+        self.sprite = sprite
+        self.update_directed_sprite()
 
 class Ghost(MovingEntity):
     def __init__(self, sprite, x, y):
@@ -278,7 +281,8 @@ ghost_sprites = [get_image(pacman_spritesheet, 1, 83, 16, 16, 3),
     get_image(pacman_spritesheet, 601, 641, 16, 16, 3),
     get_image(pacman_spritesheet, 401, 83, 16, 16, 3)]
 
-wall_sprite = get_image(pacman_spritesheet, 86, 151, 16, 16, 3)
+ghost_killer_mode_sprite = get_image(pacman_spritesheet, 201, 168, 16, 16, 3)
+wall_sprite = get_image(pacman_spritesheet, 801, 604, 48, 48, 1)
 coin_sprite = get_image(pacman_spritesheet, 536, 586, 8, 8, 2)
 cherry_sprite = get_image(pacman_spritesheet, 601, 489, 16, 16, 3)
 strawberry_sprite = get_image(pacman_spritesheet, 618, 489, 16, 16, 3)
@@ -328,6 +332,10 @@ while running:
             killer_timer -= 1
             if killer_timer == 0:
                 is_killer_mode_active = False
+                ind = 0
+                for ghost in ghosts:
+                    ghost.set_sprite(ghost_sprites[ind])
+                    ind += 1
 
         sprite_interval -= 1
         if (sprite_interval == 0):
@@ -361,6 +369,8 @@ while running:
                 if check_entity_collision(pacman, booster):
                     is_killer_mode_active = True
                     killer_timer = KILLER_MODE_DURATION
+                    for ghost in ghosts:
+                        ghost.set_sprite(ghost_killer_mode_sprite)
                     booster.change_visibility_state()
                 else:
                     screen.blit(booster.get_sprite(), booster.get_pos())
@@ -397,7 +407,6 @@ while running:
         if (bot_interval == 0):
             bot_interval = BOT_CHANGE_DIRECTION_INTERVAL
 
-        #print(score)
         screen.blit(pacman.get_directed_sprite(), pacman.get_pos())
         maze.draw_level()
 
