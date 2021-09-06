@@ -6,9 +6,11 @@ SCREEN_HEIGHT = 720
 SPRITE_SIZE = 48
 BLOCK_AMOUNT_X = SCREEN_WIDTH / SPRITE_SIZE
 BLOCK_AMOUNT_Y = SCREEN_HEIGHT / SPRITE_SIZE
+SPRITE_CHANGE_INTERVAL = 5
+BOT_CHANGE_DIRECTION_INTERVAL = 20
 ALLOWANCE_THRESHOLD = 0.3
 COIN_VALUE = 10
-MIN_COLLISION_DISTANCE = 20
+MIN_COLLISION_DISTANCE = 25
 FPS = 60
 
 class StaticEntity:
@@ -33,9 +35,6 @@ class StaticEntity:
         self.update_directed_sprite()
     
 class MovingEntity(StaticEntity):
-    pass
-
-class Pacman(StaticEntity):
     def __init__(self, sprite, x, y):
         self.sprite = sprite
         self.directed_sprite = sprite
@@ -45,73 +44,11 @@ class Pacman(StaticEntity):
         self.initial_y = y
         self.velocity_x = 0
         self.velocity_y = 0
-
+    
     def reset_pos(self):
         self.x = self.initial_x
         self.y = self.initial_y
-
-    def move_X(self, offset, maze):
-        if self.x + offset < 0 or self.x + offset > SCREEN_WIDTH - SPRITE_SIZE or maze.check_collision((self.x + offset, self.y)) or maze.check_collision((self.x + offset + SPRITE_SIZE - 1, self.y)) or maze.check_collision((self.x + offset, self.y + SPRITE_SIZE - 1)) or maze.check_collision((self.x + offset + SPRITE_SIZE - 1, self.y + SPRITE_SIZE - 1)):     
-            block_pos = maze.coord_to_block_position((self.x + offset, self.y))
-            if abs(block_pos[1] - round(block_pos[1])) < ALLOWANCE_THRESHOLD and maze.check_block(block_pos[0] + offset / abs(offset), round(block_pos[1])) == '.':
-                self.y = round(block_pos[1]) * SPRITE_SIZE
-                return True
-            return False
-        self.x += offset
-        return True
-
-    def move_Y(self, offset, maze):
-        if self.y + offset < 0 or self.y + offset > SCREEN_HEIGHT - SPRITE_SIZE or maze.check_collision((self.x, self.y + offset)) or maze.check_collision((self.x, self.y + offset + SPRITE_SIZE - 1)) or maze.check_collision((self.x + SPRITE_SIZE - 1, self.y + offset)) or maze.check_collision((self.x + SPRITE_SIZE - 1, self.y + offset + SPRITE_SIZE - 1)):
-            block_pos = maze.coord_to_block_position((self.x, self.y + offset))
-            if abs(block_pos[0] - round(block_pos[0])) < ALLOWANCE_THRESHOLD and maze.check_block(round(block_pos[0]), block_pos[1] + offset / abs(offset)) == '.':
-                self.x = round(block_pos[0]) * SPRITE_SIZE
-                return True
-            return False
-        self.y += offset
-        return True
     
-    def move(self, maze):
-        self.move_X(self.velocity_x, maze)
-        self.move_Y(self.velocity_y, maze)
-
-    def update_directed_sprite(self):
-        if self.velocity_y == 0:
-            if self.velocity_x > 0: 
-                self.directed_sprite = self.sprite
-            else:
-                self.directed_sprite = pygame.transform.rotate(self.sprite, 180)
-        elif self.velocity_x == 0:
-            if self.velocity_y > 0: 
-                self.directed_sprite = pygame.transform.rotate(self.sprite, -90)
-            else:
-                self.directed_sprite = pygame.transform.rotate(self.sprite, 90)
-        self.directed_sprite.set_colorkey((0, 0, 0)) 
-
-    def get_velocity(self):
-        return (self.velocity_x, self.velocity_y)
-    
-    def get_directed_sprite(self):
-        return self.directed_sprite
-
-    def set_velocity(self, v_x, v_y):
-        self.velocity_x = v_x
-        self.velocity_y = v_y
-        self.update_directed_sprite()
-
-class Ghost(StaticEntity):
-    def __init__(self, sprite, x, y):
-        self.sprite = sprite
-        self.x = x
-        self.y = y
-        self.initial_x = x
-        self.initial_y = y
-        self.velocity_x = 0
-        self.velocity_y = 0
-
-    def reset_pos(self):
-        self.x = self.initial_x
-        self.y = self.initial_y
-
     def move_X(self, offset, maze):
         if self.x + offset < 0 or self.x + offset > SCREEN_WIDTH - SPRITE_SIZE or maze.check_collision((self.x + offset, self.y)) or maze.check_collision((self.x + offset + SPRITE_SIZE - 1, self.y)) or maze.check_collision((self.x + offset, self.y + SPRITE_SIZE - 1)) or maze.check_collision((self.x + offset + SPRITE_SIZE - 1, self.y + SPRITE_SIZE - 1)):
             return False
@@ -134,6 +71,63 @@ class Ghost(StaticEntity):
     def set_velocity(self, v_x, v_y):
         self.velocity_x = v_x
         self.velocity_y = v_y
+
+class Pacman(MovingEntity):
+    def __init__(self, sprite, x, y):
+        self.sprite = sprite
+        self.directed_sprite = sprite
+        self.x = x
+        self.y = y
+        self.initial_x = x
+        self.initial_y = y
+        self.velocity_x = 0
+        self.velocity_y = 0
+
+    def move_X(self, offset, maze):
+        if self.x + offset < 0 or self.x + offset > SCREEN_WIDTH - SPRITE_SIZE or maze.check_collision((self.x + offset, self.y)) or maze.check_collision((self.x + offset + SPRITE_SIZE - 1, self.y)) or maze.check_collision((self.x + offset, self.y + SPRITE_SIZE - 1)) or maze.check_collision((self.x + offset + SPRITE_SIZE - 1, self.y + SPRITE_SIZE - 1)):     
+            block_pos = maze.coord_to_block_position((self.x + offset, self.y))
+            if abs(block_pos[1] - round(block_pos[1])) < ALLOWANCE_THRESHOLD and maze.check_block(block_pos[0] + offset / abs(offset), round(block_pos[1])) == '.':
+                self.y = round(block_pos[1]) * SPRITE_SIZE
+                return True
+            return False
+        self.x += offset
+        return True
+
+    def move_Y(self, offset, maze):
+        if self.y + offset < 0 or self.y + offset > SCREEN_HEIGHT - SPRITE_SIZE or maze.check_collision((self.x, self.y + offset)) or maze.check_collision((self.x, self.y + offset + SPRITE_SIZE - 1)) or maze.check_collision((self.x + SPRITE_SIZE - 1, self.y + offset)) or maze.check_collision((self.x + SPRITE_SIZE - 1, self.y + offset + SPRITE_SIZE - 1)):
+            block_pos = maze.coord_to_block_position((self.x, self.y + offset))
+            if abs(block_pos[0] - round(block_pos[0])) < ALLOWANCE_THRESHOLD and maze.check_block(round(block_pos[0]), block_pos[1] + offset / abs(offset)) == '.':
+                self.x = round(block_pos[0]) * SPRITE_SIZE
+                return True
+            return False
+        self.y += offset
+        return True
+
+    def update_directed_sprite(self):
+        if self.velocity_y == 0:
+            if self.velocity_x > 0: 
+                self.directed_sprite = self.sprite
+            else:
+                self.directed_sprite = pygame.transform.rotate(self.sprite, 180)
+        elif self.velocity_x == 0:
+            if self.velocity_y > 0: 
+                self.directed_sprite = pygame.transform.rotate(self.sprite, -90)
+            else:
+                self.directed_sprite = pygame.transform.rotate(self.sprite, 90)
+        self.directed_sprite.set_colorkey((0, 0, 0)) 
+    
+    def get_directed_sprite(self):
+        return self.directed_sprite
+
+class Ghost(MovingEntity):
+    def __init__(self, sprite, x, y):
+        self.sprite = sprite
+        self.x = x
+        self.y = y
+        self.initial_x = x
+        self.initial_y = y
+        self.velocity_x = 0
+        self.velocity_y = 0
 
 class Coin(StaticEntity):
     def __init__(self, sprite, x, y, value):
@@ -243,11 +237,13 @@ pygame.display.set_caption('Pacman')
 icon = pygame.image.load('icon.png')
 pygame.display.set_icon(icon)
 
-maze = Maze('level1')
+levels = ['level1', 'level2', 'level3']
+level_idx = 0
+maze = Maze(levels[0])
 maze.load()
 
-gameover_font = pygame.font.Font('freesansbold.ttf', 32)
-score_font = pygame.font.Font('freesansbold.ttf', 24)
+transition_font = pygame.font.Font('freesansbold.ttf', 32)
+hud_font = pygame.font.Font('freesansbold.ttf', 24)
 
 pacman_spritesheet = pygame.image.load('pacman.png').convert_alpha()
 
@@ -265,18 +261,22 @@ pacman_sprite2 = get_image(pacman_spritesheet, 303, 692, 16, 16, 3)
 running = True
 clock = pygame.time.Clock()
 reset = True
+lives = 3
+score = 0
 
 while running:
     if reset:
+        maze.load()
         pacman, ghosts, coins = maze.init_entities()
-        score = 0
         sprite_order = 1
-        interval = 5
+        sprite_interval = SPRITE_CHANGE_INTERVAL
+        bot_interval = BOT_CHANGE_DIRECTION_INTERVAL
         rand_helper = [-1, 1]
-        is_lost = False
+        has_player_lost = False
+        are_all_coins_collected = False
         reset = False
 
-    while running and not(is_lost):
+    while running and not(has_player_lost) and not(are_all_coins_collected):
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -292,50 +292,100 @@ while running:
                     pacman.set_velocity(0, 3)
 
         pacman.move(maze)
-        interval -= 1
-        if (interval == 0):
-            interval = 5
+
+        sprite_interval -= 1
+        if (sprite_interval == 0):
+            sprite_interval = SPRITE_CHANGE_INTERVAL
             sprite_order = sprite_order % 2 + 1
-            for ghost in ghosts:
+
+        if (sprite_order == 1):
+            pacman.set_sprite(pacman_sprite1)
+        else:
+            pacman.set_sprite(pacman_sprite2)
+
+        screen.fill((0, 0, 0))
+
+        bot_interval -= 1
+        for ghost in ghosts:
+            if (bot_interval == 0):
                 new_velocity_x = (random.randint(0, 2) - 1) * 3
                 if new_velocity_x == 0:
                     new_velocity_y = rand_helper[random.randint(0, 1)] * 3
                 else:
                     new_velocity_y = 0
                 ghost.set_velocity(new_velocity_x, new_velocity_y)
-        if (sprite_order == 1):
-            pacman.set_sprite(pacman_sprite1)
-        else:
-            pacman.set_sprite(pacman_sprite2)
-        screen.fill((0, 0, 0))
-        for ghost in ghosts:
             if check_entity_collision(pacman, ghost):
-                is_lost = True
+                lives -= 1
+                if lives == 0:
+                    has_player_lost = True
+                else:
+                    pacman.reset_pos()
+                    # Play animation or idk 
             ghost.move(maze)
             screen.blit(ghost.get_sprite(), ghost.get_pos())
+        if (bot_interval == 0):
+            bot_interval = BOT_CHANGE_DIRECTION_INTERVAL
+
+        are_all_coins_collected = True
         for coin in coins:
             if (coin.get_visibility_state()):
                 if check_entity_collision(pacman, coin):
                     score += coin.get_value()
                     coin.change_visibility_state()
                 else:
+                    are_all_coins_collected = False
                     screen.blit(coin.get_sprite(), coin.get_pos())
+
+        if are_all_coins_collected:
+            level_idx += 1
+            if (len(levels) > level_idx):
+                maze.set_level(levels[level_idx])
         #print(score)
         screen.blit(pacman.get_directed_sprite(), pacman.get_pos())
         maze.draw_level()
+
+        score_ins = hud_font.render('Score: ' + str(score), True, (255, 255, 255))
+        lives_ins = hud_font.render('Lives: ' + str(lives), True, (255, 255, 255))
+        level_ins = hud_font.render('Level: ' + str(level_idx + 1) + '/' + str(len(levels)), True, (255, 255, 255))
+        screen.blit(score_ins, (0, 0))
+        screen.blit(lives_ins, (0, 30))
+        screen.blit(level_ins, (0, 60))
+
         pygame.display.update()
+
     for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     reset = True
-    if running and is_lost:
+                    if has_player_lost:
+                        lives = 3
+                        score = 0
+                    if are_all_coins_collected and len(levels) <= level_idx:
+                        running = False
+
+    if running and has_player_lost:
         screen.fill((0, 0, 0))
-        gameover_ins = gameover_font.render('Game over!', True, (255, 255, 255))
-        end_score_ins = gameover_font.render('Score: ' + str(score), True, (255, 255, 255))
-        press_key_ins = gameover_font.render('Press SPACEBAR to restart the game', True, (255, 255, 255))
+        gameover_ins = transition_font.render('Game over!', True, (255, 255, 255))
+        end_score_ins = transition_font.render('Score: ' + str(score), True, (255, 255, 255))
+        press_key_ins = transition_font.render('Press SPACEBAR to restart the game', True, (255, 255, 255))
         screen.blit(gameover_ins, (SCREEN_WIDTH / 2 - 75, SCREEN_HEIGHT / 2 - 75))
         screen.blit(end_score_ins, (SCREEN_WIDTH / 2 - 58, SCREEN_HEIGHT / 2 - 38))
         screen.blit(press_key_ins, (SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT / 2))
+        pygame.display.update()
+
+    if running and are_all_coins_collected:
+        screen.fill((0, 0, 0))
+        level_completed_ins = transition_font.render('You have completed the level!', True, (255, 255, 255))
+        end_score_ins = transition_font.render('Score: ' + str(score), True, (255, 255, 255))
+        offset_x = 350
+        if (len(levels) > level_idx):
+            press_key_ins = transition_font.render('Press SPACEBAR to procceed to the next level', True, (255, 255, 255))
+        else:
+            offset_x = 250
+            press_key_ins = transition_font.render('Press SPACEBAR to close the game', True, (255, 255, 255))
+        screen.blit(level_completed_ins, (SCREEN_WIDTH / 2 - 200, SCREEN_HEIGHT / 2 - 75))
+        screen.blit(end_score_ins, (SCREEN_WIDTH / 2 - 58, SCREEN_HEIGHT / 2 - 38))
+        screen.blit(press_key_ins, (SCREEN_WIDTH / 2 - offset_x, SCREEN_HEIGHT / 2))
         pygame.display.update()
