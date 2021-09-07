@@ -5,11 +5,11 @@ SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 720
 SPRITE_SIZE = 48
 SPRITE_CHANGE_INTERVAL = 5
-BOT_CHANGE_DIRECTION_INTERVAL = 30
+BOT_CHANGE_DIRECTION_INTERVAL = 60
 KILLER_MODE_DURATION = 600
 ANIM_FRAME_DURATION = 10
 RESPAWN_TIME = 300
-ALLOWANCE_THRESHOLD = 0.3
+ALLOWANCE_THRESHOLD = 0.35
 EATEN_ENEMY_REWARD = 200
 COIN_VALUE = 10
 MIN_COLLISION_DISTANCE = 25
@@ -95,7 +95,7 @@ class Pacman(MovingEntity):
     def move_X(self, offset, maze):
         if self.x + offset < 0 or self.x + offset > SCREEN_WIDTH - SPRITE_SIZE or maze.check_collision((self.x + offset, self.y)) or maze.check_collision((self.x + offset + SPRITE_SIZE - 1, self.y)) or maze.check_collision((self.x + offset, self.y + SPRITE_SIZE - 1)) or maze.check_collision((self.x + offset + SPRITE_SIZE - 1, self.y + SPRITE_SIZE - 1)):     
             block_pos = maze.coord_to_block_position((self.x + offset, self.y))
-            if abs(block_pos[1] - round(block_pos[1])) < ALLOWANCE_THRESHOLD and maze.check_block(block_pos[0] + offset / abs(offset), round(block_pos[1])) != '#':
+            if offset != 0 and abs(block_pos[1] - round(block_pos[1])) < ALLOWANCE_THRESHOLD and maze.check_block(block_pos[0] + offset / abs(offset), round(block_pos[1])) != '#':
                 self.y = round(block_pos[1]) * SPRITE_SIZE
                 return True
             return False
@@ -105,7 +105,7 @@ class Pacman(MovingEntity):
     def move_Y(self, offset, maze):
         if self.y + offset < 0 or self.y + offset > SCREEN_HEIGHT - SPRITE_SIZE or maze.check_collision((self.x, self.y + offset)) or maze.check_collision((self.x, self.y + offset + SPRITE_SIZE - 1)) or maze.check_collision((self.x + SPRITE_SIZE - 1, self.y + offset)) or maze.check_collision((self.x + SPRITE_SIZE - 1, self.y + offset + SPRITE_SIZE - 1)):
             block_pos = maze.coord_to_block_position((self.x, self.y + offset))
-            if abs(block_pos[0] - round(block_pos[0])) < ALLOWANCE_THRESHOLD and maze.check_block(round(block_pos[0]), block_pos[1] + offset / abs(offset)) != '#':
+            if offset != 0 and abs(block_pos[0] - round(block_pos[0])) < ALLOWANCE_THRESHOLD and maze.check_block(round(block_pos[0]), block_pos[1] + offset / abs(offset)) != '#':
                 self.x = round(block_pos[0]) * SPRITE_SIZE
                 return True
             return False
