@@ -1,15 +1,19 @@
 import pygame
 import random
 
+from pygame.surfarray import blit_array
+
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 720
 SPRITE_SIZE = 48
 SPRITE_CHANGE_INTERVAL = 5
+BLINKING_BASE_INTERVAL = 20
 BOT_CHANGE_DIRECTION_INTERVAL = 60
 KILLER_MODE_DURATION = 600
 ANIM_FRAME_DURATION = 10
 RESPAWN_TIME = 300
 ALLOWANCE_THRESHOLD = 0.35
+BLINKING_WARNING_THRESHOLD = 200
 EATEN_ENEMY_REWARD = 200
 COIN_VALUE = 10
 MIN_COLLISION_DISTANCE = 25
@@ -294,6 +298,7 @@ pacman_death_anim = [get_image(pacman_spritesheet, 201, 692, 16, 16, 3),
     get_image(pacman_spritesheet, 286, 709, 16, 16, 3)]
 
 ghost_killer_mode_sprite = get_image(pacman_spritesheet, 201, 168, 16, 16, 3)
+blank_sprite = get_image(pacman_spritesheet, 286, 709, 16, 16, 3)
 wall_sprite = get_image(pacman_spritesheet, 801, 604, 48, 48, 1)
 coin_sprite = get_image(pacman_spritesheet, 536, 586, 8, 8, 2)
 cherry_sprite = get_image(pacman_spritesheet, 601, 489, 16, 16, 3)
@@ -317,10 +322,12 @@ while running:
         sprite_interval = SPRITE_CHANGE_INTERVAL
         bot_interval = BOT_CHANGE_DIRECTION_INTERVAL
         killer_timer = KILLER_MODE_DURATION
-        anim_ind = 0
+        blinking_interval = BLINKING_BASE_INTERVAL
         anim_interval = ANIM_FRAME_DURATION
+        anim_ind = 0
         rand_helper = [-1, 1]
         is_killer_mode_active = False
+        has_blinked = False
         is_anim_being_played = False
         has_player_lost = False
         are_all_coins_collected = False
@@ -340,13 +347,29 @@ while running:
                     pacman.set_velocity(0, -3)
                 if event.key == pygame.K_DOWN:
                     pacman.set_velocity(0, 3)
+
         if is_killer_mode_active:
             killer_timer -= 1
+            if killer_timer < BLINKING_WARNING_THRESHOLD:
+                blinking_interval -= 1
+                if blinking_interval == 0: # Make it universal and independent from other values
+                    blinking_interval = BLINKING_BASE_INTERVAL - (BLINKING_WARNING_THRESHOLD - killer_timer) // BLINKING_BASE_INTERVAL * 2
+                    if blinking_interval < BLINKING_BASE_INTERVAL // 5:
+                        blinking_interval = BLINKING_BASE_INTERVAL // 5
+                    if has_blinked:
+                        ind = 0
+                        for ghost in ghosts:
+                            ghost.set_sprite(ghost_killer_mode_sprite) # Fix code duplication
+                            ind += 1
+                    else:
+                        for ghost in ghosts:
+                            ghost.set_sprite(blank_sprite) # Fix code duplication
+                    has_blinked = not(has_blinked)
             if killer_timer == 0:
                 is_killer_mode_active = False
                 ind = 0
                 for ghost in ghosts:
-                    ghost.set_sprite(ghost_sprites[ind])
+                    ghost.set_sprite(ghost_sprites[ind]) # Fix code duplication
                     ind += 1
 
         sprite_interval -= 1
@@ -381,6 +404,7 @@ while running:
                 if check_entity_collision(pacman, booster) and not(is_anim_being_played):
                     is_killer_mode_active = True
                     killer_timer = KILLER_MODE_DURATION
+                    blinking_interval = BLINKING_BASE_INTERVAL
                     for ghost in ghosts:
                         ghost.set_sprite(ghost_killer_mode_sprite)
                     booster.change_visibility_state()
