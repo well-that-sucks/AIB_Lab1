@@ -1,0 +1,15 @@
+.........................
+.########.......########.
+.#bccccc#########cccccb#.
+.#c####ccccccccccc####c#.
+.#c#kccc####c####ccck#c#.
+.#c#c#c##scccccs##c#c#c#.
+.#c#c#cccc#####cccc#c#c#.
+.#ccc####cccpccc####ccc#.
+.#c#c#cccc#####cccc#c#c#.
+.#c#c#c##vcccccv##c#c#c#.
+.#c#kccc####c####ccck#c#.
+.#c####ccccccccccc####c#.
+.#bccccc#########cccccb#.
+.########.......########.
+.........................
